@@ -62,7 +62,7 @@ ui <- fluidPage(
         h2("About"),
         p(
           "This app imports `.csv` files exported from",
-          em("Olympus Vanta C-Series Handheld XRF Spectrometer"),
+          em("Olympus Vanta C-Series Handheld X-Ray Fluorescence Spectrometer"),
           "and produce a tidied-up tables in multiple formats."
         ),
         br(),

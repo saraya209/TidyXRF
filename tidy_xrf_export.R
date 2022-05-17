@@ -9,7 +9,7 @@ library(tidyverse)
 library(openxlsx)
 #
 ##load functions
-source("R/tidy_xrd_functions.R")
+source("R/tidy_xrf_functions.R")
 #
 ## File Path:
 data_path <- file.path("data")

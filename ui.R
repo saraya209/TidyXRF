@@ -15,14 +15,19 @@ ui <- fluidPage(
                 accept=c(
                   "text/csv",
                   "text/comma-separated-values,text/plain",
-                  ".csv") ),
+                  ".csv",
+                  ".txt") ),
       
       wellPanel(
-        strong("Optional Tidying Parameters:"),
+        strong("Tidying Parameters:"),
         # helpText("Will not affect the",
         #          "Tidy-Long-Format export."),
+        selectInput("lod", label = NULL,
+                    c("<LOD = 0" = 0,
+                      "<LOD = NA" = NA_integer_,
+                      "<LOD = LOD x 0.5" = 0.5)),
         
-        checkboxInput("lod", "Set <LOD = 0", FALSE),
+        #checkboxInput("lod", "Set <LOD = 0", FALSE),
         checkboxInput("remove_na", "Drop elements with missing concentration", TRUE),
         wellPanel(
         checkboxInput("subset_element", "Subset elements", FALSE),
@@ -32,11 +37,18 @@ ui <- fluidPage(
           multiple = FALSE,
           accept = c("text/csv",
                      "text/comma-separated-values,text/plain",
-                     ".csv")
+                     ".csv",
+                     ".txt")
         )
         )
         
       ), 
+      wellPanel(
+        checkboxInput("guide", "Compare with Guidelines", FALSE),
+        selectInput("std", label = NULL,
+                    stdref.tbl$column_name),
+        #textOutput("text")
+      ),
       
       
       actionButton("run_tidy", "Run Tidy Function"),
@@ -83,15 +95,17 @@ ui <- fluidPage(
         ),
         p(
           "- The",
-          span("Optional Tidying Parameters", style = "color:grey; font-weight:bold"),
-          "allow additional controls on how the",
+          span("Tidying Parameters", style = "color:grey; font-weight:bold"),
+          "allow additional controls:",
+          "how to deal with `<LOD` values, whether or not `NA` values should be droped from the",
           em("wide format"),
-          "tables are processed. Uploading a",
-          strong("single column list of element symbols"),
-          "in .csv format is required should you choose to subset the",
-          "tables to fewer elements of interest using",
+          "tables, and whether or not only a subset of elements should appear in the ",
+          em("wide format"),
+          "tables. To use the",
           span("Subset elements", style = "color:grey; font-weight:bold"),
-          "option."
+          "function, a .csv file with",
+          strong("list of element symbols separated by a comma"),
+          "(e.g., 'Pb,Zn,Hg,As') is required"
         ),
         p(
           "- Click",
@@ -121,7 +135,12 @@ ui <- fluidPage(
           "-",
           em("Tidying-Parameters:"),
           "List of parameters used to tidy the data."
-        )
+        ),
+        br(),
+        br(),
+        br(),
+        p("Author:", 
+          span("Samuel.Araya@usda.gov", style = "color:blue; font-weight:bold"))
       )
       
     ))

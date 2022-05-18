@@ -26,34 +26,27 @@ server <- function(input, output, session) {
     )
   })
   # Run Button ----
-  dataset <- reactive({
-    req(input$run_tidy)
+  dataset <- eventReactive(input$run_tidy,{
+   # req(input$run_tidy)
     if(input$subset_element){
       subset_file = uploadsubsetpath()
     }else{
       subset_file = NULL
     }
-    if(input$lod){
-      set_lod_zero = TRUE
-    }else{
-      set_lod_zero = FALSE
-    }
-    if(input$remove_na){
-      drop_na_concentration = TRUE
-    }else{
-      drop_na_concentration = FALSE
-    }
+    
     
     tidy_xrf(raw_csv_file = uploaddatapath(),
              subset_file = subset_file,
-             set_lod_zero = set_lod_zero,
-             drop_na_concentration = drop_na_concentration,
+             handle_lod =  as.numeric(input$lod),
+             drop_na_concentration = input$remove_na,
              save_excel = FALSE,
-             doreturn = TRUE)
+             doreturn = TRUE,
+             compare_guide = input$guide)
     
   })
+  #output$text <- renderText({ input$std })
+  
   # Reactive value for Tidy dataset ----
-
   
   # Table of raw dataset ----
   output$rawtable <- DT::renderDataTable({

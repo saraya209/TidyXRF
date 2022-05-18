@@ -4,12 +4,9 @@
 #' "Olympus Vanta C-Series Handheld XRF Spectrometer" 
 #' as `csv` format.
 #' 
-## Packages
-library(tidyverse)
-library(openxlsx)
 #
 ##load functions
-source("R/tidy_xrf_functions.R")
+source("global.R")
 #
 ## File Path:
 data_path <- file.path("data")
@@ -18,10 +15,10 @@ raw_csv_filename = "chemistry-841524-2022-01-10-14-39-13"
 subset_file_name = "selected_elements_list"
 
 ## Full paths for data and element subset list.
-raw_csv_file = file.path(raw_csv_path, paste0(raw_csv_filename, ".csv"))
+raw_csv_file = file.path(data_path, paste0(raw_csv_filename, ".csv"))
 #' Also import standards data if applicable
 
-subset_file = file.path(raw_csv_path, paste0(subset_file_name, ".csv"))
+subset_file = file.path(data_path, paste0(subset_file_name, ".txt"))
 #' 
 #' The table has about 11 columns which describe the sample (such as
 #' instrument serial number, Date, Method, etc.). 

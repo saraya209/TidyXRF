@@ -70,6 +70,7 @@ ui <- fluidPage(
           label = NULL,
           choices = c("None", stdref.tbl$Standard)
         ),
+        tags$style("#text {font-size:11px;}"),
         textOutput("text")
       ), 
       

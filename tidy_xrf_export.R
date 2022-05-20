@@ -11,7 +11,7 @@ source("global.R")
 ## File Path:
 data_path <- file.path("data")
 ## File Names
-raw_csv_filename = "chemistry-841524-2022-01-10-14-39-13"
+raw_csv_filename = "xrf_export_combined_2022-05-17"
 subset_file_name = "selected_elements_list"
 
 ## Full paths for data and element subset list.

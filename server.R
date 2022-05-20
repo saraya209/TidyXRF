@@ -35,16 +35,28 @@ server <- function(input, output, session) {
     }
     
     
-    tidy_xrf(raw_csv_file = uploaddatapath(),
-             subset_file = subset_file,
-             handle_lod =  as.numeric(input$lod),
-             drop_na_concentration = input$remove_na,
-             save_excel = FALSE,
-             doreturn = TRUE,
-             compare_guide = input$std)
+    tidy_xrf(
+      # Input files
+      raw_csv_file = uploaddatapath(),
+      elements_tbl = elements.tbl,
+      stdref_tbl = stdref.tbl,
+      # Optional tidy parameters
+      subset_file = subset_file,
+      handle_lod = as.numeric(input$lod),
+      drop_na_concentration = input$remove_na,
+      compare_guide = input$std,
+      # function export
+      save_excel = FALSE,
+      doreturn = TRUE
+    )
     
   })
-  output$text <- renderText({ input$std })
+  output$text <- renderText({
+    stdref.tbl %>% 
+      dplyr::filter(Standard == input$std) %>% 
+      dplyr::select(Description) %>% 
+      dplyr::pull()
+     })
   
   # Reactive value for Tidy dataset ----
   
@@ -87,30 +99,7 @@ server <- function(input, output, session) {
       "Tidy_data.xlsx"
     },
     content = function(file) {
-    #   my_workbook <- createWorkbook()
-    #   
-    #   addWorksheet(
-    #     wb = my_workbook,
-    #     sheetName = "Wide Data"
-    #   )
-    #   
-    #   
-    #   writeData(
-    #     my_workbook,
-    #     sheet = 1,
-    #     dataset()$wide
-    #   )
-    #   
-    #   addWorksheet(
-    #     wb = my_workbook,
-    #     sheetName = "Long Data"
-    #   )
-    #   writeData(
-    #     my_workbook,
-    #     sheet = 2,
-    #     dataset()$long
-    #   )
-      
+
      
       saveWorkbook(dataset()$excel, file)
     }

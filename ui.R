@@ -5,18 +5,20 @@ ui <- fluidPage(
   
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
-    
     # Sidebar panel for inputs ----
     sidebarPanel(
       # Input: Browse dataset ----
-      fileInput(inputId = 'data_upload',
-                label = "Upload XRF File", 
-                multiple=FALSE,
-                accept=c(
-                  "text/csv",
-                  "text/comma-separated-values,text/plain",
-                  ".csv",
-                  ".txt") ),
+      fileInput(
+        inputId = 'data_upload',
+        label = "Upload XRF File",
+        multiple = FALSE,
+        accept = c(
+          "text/csv",
+          "text/comma-separated-values,text/plain",
+          ".csv",
+          ".txt"
+        )
+      ),
       
       wellPanel(
         helpText("Tidying Parameters"),
@@ -40,28 +42,20 @@ ui <- fluidPage(
         ),
         #        wellPanel(
         strong("Subset elements:"),
-        prettyCheckbox(inputId = "subset_element", 
-                       label = "Yes", 
-                       value = FALSE),
-       #"Elements to subset:",
-       tags$style("#subset_list {font-size:12px;}"),
-        textInput("subset_list", 
-                  label = NULL, 
+        prettyCheckbox(
+          inputId = "subset_element",
+          label = "Yes",
+          value = FALSE
+        ),
+        #"Elements to subset:",
+        tags$style("#subset_list {font-size:12px;}"),
+        textInput("subset_list",
+                  label = NULL,
                   value = "Pb,Cr,As,Zn,Cd,Cu,Hg,Ni,Mo,Se")
-        # fileInput(
-        #   inputId = 'subset_upload',
-        #   label = NULL,
-        #   multiple = FALSE,
-        #   accept = c(
-        #     "text/csv",
-        #     "text/comma-separated-values,text/plain",
-        #     ".csv",
-        #     ".txt"
-        #   )
-        # )
-        #        )
         
-      ), 
+        
+      ),
+      
       wellPanel(
         helpText("Compare Values with Guidelines"),
         #checkboxInput("guide", "Compare with Guidelines", FALSE),
@@ -72,20 +66,18 @@ ui <- fluidPage(
         ),
         tags$style("#text {font-size:11px;}"),
         textOutput("text")
-      ), 
+      ),
       
       
       actionButton("run_tidy", "Run Tidy Function"),
       br(),
       br(),
-      downloadButton(
-        "download_excel", 
-        "Download Data to Excel"
-      ),
+      downloadButton("download_excel",
+                     "Download Data to Excel"),
       helpText("Note: Click the Help tab for information.")
       
       
-    ),
+    ), 
     
     # Main panel for displaying outputs ----
     mainPanel(tabsetPanel(
@@ -98,8 +90,10 @@ ui <- fluidPage(
         h2("About"),
         p(
           "This app imports `.csv` files exported from",
-          em("Olympus Vanta C-Series Handheld X-Ray Fluorescence Spectrometer"),
-          "and produce a tidied-up tables in multiple formats."
+          em(
+            "Olympus Vanta C-Series Handheld X-Ray Fluorescence Spectrometer"
+          ),
+          "and creates tidied-up tables in multiple formats."
         ),
         br(),
         h2("How To Use App"),
@@ -156,6 +150,20 @@ ui <- fluidPage(
         ),
         p(
           "-",
+          em("Concentrations-v-Guidelines:"),
+          "Wide-format table showing concentrations. Values above selected guideline",
+          "are appended with the percent-above the guideline values in parenthesis.",
+          "Cells with concentrations that exceed the selected guideline are highlighted red.",
+          "For reference, all available guideline values are printed at the bottom of this table",
+          "with the selected guideline highlighted in red."
+        ),
+        p(
+          "-",
+          em("Guidelines-Description:"),
+          "Description of the guidelines and additional notes where avaialble."
+        ),
+        p(
+          "-",
           em("Tidy-Long-Format:"),
           "The full data pivoted to long format. This is the master tidied data."
         ),
@@ -165,24 +173,15 @@ ui <- fluidPage(
           em("Tidying-Parameters:"),
           "List of parameters used to tidy the data."
         ),
-        p(
-          "-",
-          em("Concentrations-v-Guidelines:"),
-          "Wide-format table showing percent-above or percent-below the guideline maximum values.",
-          "Negative values are percent below guideline maximum and positive values are percent above guideline maximum.",
-          "Cells with positive values (concentrations that exceed the guideline) are highlighted red."
-        ),
-        p(
-          "-",
-          em("Guidelines-Used:"),
-          "Description of the selected guideline and the guideline maximum values."
-        ),
+        
         br(),
         br(),
-        p("Author:", 
-          span("Samuel.Araya@usda.gov", style = "color:blue; font-weight:bold"))
+        p(
+          "Author:",
+          span("Samuel.Araya@usda.gov", style = "color:blue; font-weight:bold")
+        )
       )
       
     ))
-)
+  )
 )

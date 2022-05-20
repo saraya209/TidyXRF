@@ -14,6 +14,7 @@ tidy_xrf <- function(
   doreturn = TRUE) {
   
   
+  
   ## Tidyup XRF exported table
   ## Args:
   # raw_csv_file: Full path to raw csv file
@@ -27,14 +28,20 @@ tidy_xrf <- function(
   require("openxlsx")
   ## Read CSV all columns as character
   ## fread() jumps empty row at the beganning.
-  df = data.table::fread(input = raw_csv_file, colClasses = "character", quote="")
- 
+  df = data.table::fread(input = raw_csv_file,
+                         colClasses = "character",
+                         quote = "")
+  
   ## Element Symbol Sorted by Atomic Number
-  element_symbol = elements_tbl %>% 
-    dplyr::arrange(Atomic_Number) %>% 
+  element_symbol = elements_tbl %>%
+    dplyr::arrange(Atomic_Number) %>%
     dplyr::pull(Symbol)
   ## List of possible variables appended to element or custom compounds
-  variable_list = c("Compound", "Compound Level", "Compound Error", "Concentration",  "Error1s")
+  variable_list = c("Compound",
+                    "Compound Level",
+                    "Compound Error",
+                    "Concentration",
+                    "Error1s")
   
   # pivot all columns that start with "element symbol + a space" OR
   #   contain one of the variables, this is so custom created compounds are included.
@@ -60,48 +67,54 @@ tidy_xrf <- function(
     )
   
   ## create a list of all analytes in table
-  analyte_list = unique(unique(dfl$Analyte) )
+  analyte_list = unique(unique(dfl$Analyte))
   
   
   # Pivot to Wide ----
   
   ## Subroutine: Subset ----
   
-  if(is.character(subset_file)){
-   # Import comma separated symbols
-    element_subset = str_split(subset_file, pattern = ",", simplify = T ) %>% 
+  if (is.character(subset_file)) {
+    # Import comma separated symbols
+    element_subset = str_split(subset_file, pattern = ",", simplify = T) %>%
       forcats::as_factor() ## Creates factor in the original order
     ##
-    dfw = dfl %>% 
-      dplyr::filter(as.character(Analyte) %in% as.character(element_subset) ) %>%
-      dplyr::mutate(Analyte = factor(Analyte, 
-                                     levels = levels(element_subset)) ) %>% 
-      dplyr::arrange(Date, Time, Analyte) %>% 
+    dfw = dfl %>%
+      dplyr::filter(as.character(Analyte) %in% as.character(element_subset)) %>%
+      dplyr::mutate(Analyte = factor(Analyte,
+                                     levels = levels(element_subset))) %>%
+      dplyr::arrange(Date, Time, Analyte) %>%
       dplyr::ungroup()
     
-  }else {
-    dfw = dfl %>% 
+  } else {
+    dfw = dfl %>%
       dplyr::ungroup()
   }
   
   # Concentration only
-  dfw_c = dfw %>% 
+  dfw_c = dfw %>%
     dplyr::filter(Variable == "Concentration") %>%
-    dplyr::select(-any_of(c(names(elements_tbl),"Variable", "Raw_Value", "LOD"))) %>%
-    {if(drop_na_concentration){
-      tidyr::drop_na(., Value)
-    }else {
-      .
-    }} %>% 
-    tidyr::pivot_wider(names_from = Analyte, values_from = Value) 
-    
+    dplyr::select(-any_of(c(
+      names(elements_tbl), "Variable", "Raw_Value", "LOD"
+    ))) %>%
+    {
+      if (drop_na_concentration) {
+        tidyr::drop_na(., Value)
+      } else {
+        .
+      }
+    } %>%
+    tidyr::pivot_wider(names_from = Analyte, values_from = Value)
+  
   # Concentration and errors
-  dfw_e = dfw %>% 
+  dfw_e = dfw %>%
     dplyr::filter(Variable %in% c("Concentration", "Error1s")) %>%
     dplyr::select(-any_of(c(names(elements_tbl), "Raw_Value", "LOD"))) %>%
-    tidyr::pivot_wider(names_from = c(Analyte, Variable), 
-                       values_from = Value,
-                       names_sep = " ")
+    tidyr::pivot_wider(
+      names_from = c(Analyte, Variable),
+      values_from = Value,
+      names_sep = " "
+    )
   
   ## Subroutine: Compare with Guide ----
   
@@ -114,11 +127,12 @@ tidy_xrf <- function(
                                round(100 * ((Value-!!sym(compare_guide)) / !!sym(compare_guide)
                                ),
                                2), "%)"),
-        val_pct_above = ifelse(Value > !!sym(compare_guide),
-                               paste0(Value, val_pct_above ),
-                               Value),
-        Variable = "Percent Above Guideline",
-        Units = "Percent"
+        val_pct_above = ifelse(
+          Value > !!sym(compare_guide),
+          paste0(Value, val_pct_above),
+          Value
+        ),
+        Variable = "PPM (% Above Guideline)"
       ) %>%
       dplyr::ungroup() %>%
       dplyr::select(-any_of(c(
@@ -127,40 +141,44 @@ tidy_xrf <- function(
       tidyr::pivot_wider(names_from = Analyte,
                          values_from = val_pct_above)
     
-    select_lod = elements_tbl %>% 
-      dplyr::select(all_of(c("Name", "Symbol",compare_guide))) %>% 
+    select_lod = elements_tbl %>%
+      dplyr::select(all_of(c("Name", "Symbol", compare_guide))) %>%
       tidyr::drop_na()
     
-    select_standard = stdref_tbl %>% 
-      dplyr::filter(Standard == {{ compare_guide }} ) 
+    select_standard = stdref_tbl %>%
+      dplyr::filter(Standard == {
+        {
+          compare_guide
+        }
+      })
     
     # Append guides to concentration with guides
     # Add standards
-    std_names = stdref_tbl %>% 
+    std_names = stdref_tbl %>%
       dplyr::pull(Standard)
     
     # create guides table
-    guide_wide = elements_tbl %>% 
-      dplyr::select(all_of(c("Symbol", std_names) )) %>%
-      tidyr::pivot_longer(-Symbol) %>% 
+    guide_wide = elements_tbl %>%
+      dplyr::select(all_of(c("Symbol", std_names))) %>%
+      tidyr::pivot_longer(-Symbol) %>%
       tidyr::pivot_wider(names_from = Symbol, values_from = value) %>%
-      dplyr::select(any_of(c("name", names(dfw_g)))) %>% 
-      #janitor::remove_empty("cols") %>% 
+      dplyr::select(any_of(c("name", names(dfw_g)))) %>%
+      #janitor::remove_empty("cols") %>%
       mutate(across(everything(), as.character))
     
     # Make guides table list of elements align with data
-    guide_fmt_wide = dfw_g %>% 
+    guide_fmt_wide = dfw_g %>%
       dplyr::bind_rows(guide_wide) %>%
-      dplyr::filter(!is.na(name)) %>% 
-      dplyr::mutate(`Instrument Serial Num` = name) %>% 
+      dplyr::filter(!is.na(name)) %>%
+      dplyr::mutate(`Instrument Serial Num` = name) %>%
       dplyr::select(-name)
-      
+    
     
     select_standard_row = which(guide_fmt_wide$`Instrument Serial Num` == select_standard$Standard)
   }
   
   # Prepare Excel ----
-
+  
   params.df = tibble::tibble(
     VARIABLES = c(
       #"Original File Name:",
@@ -186,17 +204,17 @@ tidy_xrf <- function(
         paste(element_subset, collapse = ", "),
         ""
       )
-     
+      
     )
   )
   
- 
+  
   ## create a workbook and add a worksheet
   wb <- createWorkbook()
   addWorksheet(wb, "Concentrations")
   addWorksheet(wb, "Concentrations-and-Error")
   
-  if (compare_guide != "None"){
+  if (compare_guide != "None") {
     addWorksheet(wb, "Concentrations-v-Guidelines")
     addWorksheet(wb, "Guidelines-Description")
   }
@@ -206,88 +224,110 @@ tidy_xrf <- function(
   
   
   # formatting cells
-  myHeader <- createStyle(textDecoration = "bold", border = "bottom")
-  negStyle <- createStyle(fontColour = "#9C0006", bgFill = "#FFC7CE")
-  selectStyle <- createStyle(fontColour = "#9C0006", textDecoration = "bold")
-  guideStyle <- createStyle(border = "TopBottom", fontColour = "#4F81BD", borderStyle = "thick")
-    
-    # Add data to workbook
-
+  myHeader <-
+    createStyle(textDecoration = "bold", border = "bottom")
+  negStyle <-
+    createStyle(fontColour = "#9C0006", bgFill = "#FFC7CE")
+  selectStyle <-
+    createStyle(fontColour = "#9C0006", textDecoration = "bold")
+  guideStyle <-
+    createStyle(border = "TopBottom",
+                fontColour = "#4F81BD",
+                borderStyle = "thick")
   
-  writeData(wb, "Concentrations", 
+  # Add data to workbook
+  
+  
+  writeData(wb, "Concentrations",
             x = dfw_c,
             headerStyle = myHeader)
-    writeData(wb, "Concentrations-and-Error", dfw_e, headerStyle = myHeader)
-    writeData(wb, "Tidy-Long-Format", 
-              dfl %>% dplyr::select(-any_of(names(elements_tbl))),
+  writeData(wb, "Concentrations-and-Error", dfw_e, headerStyle = myHeader)
+  writeData(wb,
+            "Tidy-Long-Format",
+            dfl %>% dplyr::select(-any_of(names(elements_tbl))),
+            headerStyle = myHeader)
+  writeData(wb, "Original-Raw", df)
+  writeData(wb, "Tidying-Parameters", params.df)
+  
+  
+  
+  if (compare_guide != "None") {
+    writeData(wb, "Concentrations-v-Guidelines",
+              dfw_g,
               headerStyle = myHeader)
-    writeData(wb, "Original-Raw", df)
-    writeData(wb, "Tidying-Parameters", params.df)
+    
+    #Add Guideline rows
+    guide_row_start = nrow(dfw_g) + 1
+    guide_row_end = guide_row_start + nrow(guide_fmt_wide) - 1
+    highlight_row = guide_row_start + select_standard_row - 1
+    col_start = which(names(dfw_g) == "Variable") + 1
+    col_end = ncol(dfw_g)
     
     
+    writeData(
+      wb,
+      "Concentrations-v-Guidelines",
+      colNames = FALSE,
+      startRow = guide_row_start,
+      x = guide_fmt_wide
+    )
     
-    if (compare_guide != "None"){
-      writeData(wb, "Concentrations-v-Guidelines", 
-                dfw_g,
-                headerStyle = myHeader)
-      
-      #Add Guideline rows
-      guide_row_start = nrow(dfw_g)+1
-      guide_row_end = guide_row_start + nrow(guide_fmt_wide) -1
-      highlight_row = guide_row_start + select_standard_row -1
-      col_start = which(names(dfw_g) == "Variable") + 1
-      col_end = ncol(dfw_g)
-      
-      
-      writeData(wb, "Concentrations-v-Guidelines", 
-                colNames = FALSE,
-                startRow = guide_row_start,
-                x = guide_fmt_wide)
-      
-      #Format guide table
-      addStyle(wb, sheet = "Concentrations-v-Guidelines", 
-               style =  guideStyle, 
-               rows = guide_row_start:guide_row_end, 
-               cols = 1:col_end, 
-               gridExpand = TRUE)
-      
-      #format selected guide row
-      addStyle(wb, sheet = "Concentrations-v-Guidelines", 
-               style =  selectStyle, 
-               rows = highlight_row, 
-               cols = 1:col_end, 
-               gridExpand = TRUE)
-      
-      #Format Concentrations above
-
-      conditionalFormatting(wb, "Concentrations-v-Guidelines", 
-                            cols = col_start:col_end, 
-                            rows = 2:guide_row_start-1, 
-                            type = "contains",
-                            rule = "%", 
-                            style = negStyle)
-      
-      writeData(wb, "Guidelines-Description", stdref.tbl)
-      
-      
-    }
-
+    #Format guide table
+    addStyle(
+      wb,
+      sheet = "Concentrations-v-Guidelines",
+      style =  guideStyle,
+      rows = guide_row_start:guide_row_end,
+      cols = 1:col_end,
+      gridExpand = TRUE
+    )
     
-   
-    if(save_excel){
-      save_excel_file = file.path(dirname(raw_csv_file),
-                                  paste0("Tidy_", 
-                                         strsplit(basename(raw_csv_file), split="\\.")[[1]][1],
-                                         ".xlsx") )
+    #format selected guide row
+    addStyle(
+      wb,
+      sheet = "Concentrations-v-Guidelines",
+      style =  selectStyle,
+      rows = highlight_row,
+      cols = 1:col_end,
+      gridExpand = TRUE
+    )
+    
+    #Format Concentrations above
+    
+    conditionalFormatting(
+      wb,
+      "Concentrations-v-Guidelines",
+      cols = col_start:col_end,
+      rows = 2:guide_row_start - 1,
+      type = "contains",
+      rule = "%",
+      style = negStyle
+    )
+    
+    writeData(wb, "Guidelines-Description", stdref.tbl)
+    
+    
+  }
+  
+  
+  
+  if (save_excel) {
+    save_excel_file = file.path(dirname(raw_csv_file),
+                                paste0("Tidy_",
+                                       strsplit(basename(raw_csv_file), split =
+                                                  "\\.")[[1]][1],
+                                       ".xlsx"))
     
     saveWorkbook(wb, file = save_excel_file, overwrite = TRUE)
   }
   
-  if(doreturn){
-    df_list = list(raw = df, 
-                   long = dfl %>% dplyr::select(-any_of(names(elements_tbl))), 
-                   wide = dfw_c,
-                   excel = wb) 
+  if (doreturn) {
+    df_list = list(
+      raw = df,
+      long = dfl %>% dplyr::select(-any_of(names(elements_tbl))),
+      wide = dfw_c,
+      excel = wb
+    )
     return(df_list)
   }
   

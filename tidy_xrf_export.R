@@ -18,7 +18,7 @@ subset_file_name = "selected_elements_list"
 raw_csv_file = file.path(data_path, paste0(raw_csv_filename, ".csv"))
 #' Also import standards data if applicable
 
-subset_file = file.path(data_path, paste0(subset_file_name, ".txt"))
+subset_file = file.path(data_path, paste0(subset_file_name, ".csv"))
 #' 
 #' The table has about 11 columns which describe the sample (such as
 #' instrument serial number, Date, Method, etc.). 

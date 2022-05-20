@@ -19,36 +19,59 @@ ui <- fluidPage(
                   ".txt") ),
       
       wellPanel(
-        strong("Tidying Parameters:"),
+        helpText("Tidying Parameters"),
         # helpText("Will not affect the",
         #          "Tidy-Long-Format export."),
-        selectInput("lod", label = NULL,
-                    c("<LOD = 0" = 0,
-                      "<LOD = NA" = NA_integer_,
-                      "<LOD = LOD x 0.5" = 0.5)),
-        
-        #checkboxInput("lod", "Set <LOD = 0", FALSE),
-        checkboxInput("remove_na", "Drop elements with missing concentration", TRUE),
-        wellPanel(
-        checkboxInput("subset_element", "Subset elements", FALSE),
-        fileInput(
-          inputId = 'subset_upload',
-          label = "Upload Elements List",
-          multiple = FALSE,
-          accept = c("text/csv",
-                     "text/comma-separated-values,text/plain",
-                     ".csv",
-                     ".txt")
-        )
-        )
+        prettyRadioButtons(
+          inputId = "lod",
+          label = "Set `<LOD` as:",
+          choices = c(
+            "0" = 0,
+            "NA" = NA_integer_,
+            "LOD x 0.5" = 0.5
+          ),
+          inline = TRUE,
+        ),
+        strong("Missing concentration:"),
+        prettyCheckbox(
+          inputId = "remove_na",
+          label = "Drop element",
+          value = TRUE
+        ),
+        #        wellPanel(
+        strong("Subset elements:"),
+        prettyCheckbox(inputId = "subset_element", 
+                       label = "Yes", 
+                       value = FALSE),
+       #"Elements to subset:",
+       tags$style("#subset_list {font-size:12px;}"),
+        textInput("subset_list", 
+                  label = NULL, 
+                  value = "Pb,Cr,As,Zn,Cd,Cu,Hg,Ni,Mo,Se")
+        # fileInput(
+        #   inputId = 'subset_upload',
+        #   label = NULL,
+        #   multiple = FALSE,
+        #   accept = c(
+        #     "text/csv",
+        #     "text/comma-separated-values,text/plain",
+        #     ".csv",
+        #     ".txt"
+        #   )
+        # )
+        #        )
         
       ), 
       wellPanel(
-        checkboxInput("guide", "Compare with Guidelines", FALSE),
-        selectInput("std", label = NULL,
-                    stdref.tbl$column_name),
-        #textOutput("text")
-      ),
+        helpText("Compare Values with Guidelines"),
+        #checkboxInput("guide", "Compare with Guidelines", FALSE),
+        pickerInput(
+          inputId = "std",
+          label = NULL,
+          choices = c("None", stdref.tbl$Standard)
+        ),
+        textOutput("text")
+      ), 
       
       
       actionButton("run_tidy", "Run Tidy Function"),
@@ -103,9 +126,14 @@ ui <- fluidPage(
           em("wide format"),
           "tables. To use the",
           span("Subset elements", style = "color:grey; font-weight:bold"),
-          "function, a .csv file with",
+          "function, you must supply a",
           strong("list of element symbols separated by a comma"),
-          "(e.g., 'Pb,Zn,Hg,As') is required"
+          "(e.g., 'Pb,Zn,Hg,As')."
+        ),
+        p(
+          "- To create additoinal Excel sheets that compare sample concentration values ",
+          " versus maximum concentration guidelines, select a guideline from the",
+          span("drop-down list.", style = "color:grey; font-weight:bold")
         ),
         p(
           "- Click",
@@ -136,7 +164,18 @@ ui <- fluidPage(
           em("Tidying-Parameters:"),
           "List of parameters used to tidy the data."
         ),
-        br(),
+        p(
+          "-",
+          em("Concentrations-v-Guidelines:"),
+          "Wide-format table showing percent-above or percent-below the guideline maximum values.",
+          "Negative values are percent below guideline maximum and positive values are percent above guideline maximum.",
+          "Cells with positive values (concentrations that exceed the guideline) are highlighted red."
+        ),
+        p(
+          "-",
+          em("Guidelines-Used:"),
+          "Description of the selected guideline and the guideline maximum values."
+        ),
         br(),
         br(),
         p("Author:", 

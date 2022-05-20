@@ -7,13 +7,13 @@ tidy_xrf <- function(raw_csv_file,
                      doreturn = TRUE,
                      elements_tbl = elements.tbl,
                      stdref_tbl = stdref.tbl,
-                     compare_guide = FALSE) {
+                     compare_guide = "None") {
   
   
   ## Tidyup XRF exported table
   ## Args:
   # raw_csv_file: Full path to raw csv file
-  # subset_file: Full path to csv file with selected elements. If NULL Elements are not subset.
+  # subset_file: csv list of elements to supset for wide table. If NULL Elements are not subset.
   # handle_lod: one of c("0", "NA", "0.5"). "0": <LOD -> 0, "NA": <LOD -> NA, "0,5" -> Half of LOD 
   # save_excel_file: Full path to save tidy table.
   ## Returns
@@ -57,19 +57,47 @@ tidy_xrf <- function(raw_csv_file,
       Analyte = factor(Analyte, levels = element_symbol)
     )
   
+  if (compare_guide != "None") {
+    dfws <- dfl %>%
+      dplyr::filter(!is.na(!!sym(compare_guide)) &
+                      Variable == "Concentration") %>%
+      dplyr::mutate(
+        Percent_Above_Guide = round(
+          100 * (( Value - !!sym(compare_guide)) / !!sym(compare_guide)),
+          2),
+        Variable = "Percent Concentration Above Guideline",
+        Units = "Percent") %>%
+      dplyr::ungroup() %>%
+      dplyr::select(-any_of(c(names(elements_tbl), "Raw_Value", "Value", "LOD"))) %>%
+      tidyr::pivot_wider(
+        names_from = Analyte,
+        values_from = Percent_Above_Guide
+      )
+    
+    select_lod = elements_tbl %>% 
+      dplyr::select(all_of(c("Name", "Symbol",compare_guide))) %>% 
+      tidyr::drop_na()
+    
+    select_standard = stdref_tbl %>% 
+      dplyr::filter(Standard == {{ compare_guide }} ) 
+  }
+  
   
   ## Wide
   
   if(is.character(subset_file)){
     ## Read CSV all columns as character
-    element_subset = readr::read_csv(file = subset_file, 
-                              col_types = cols(.default = "c"),
-                              col_names = FALSE,
-                              n_max = 1) %>% 
-      unlist(use.names = FALSE) %>% 
+    # element_subset = readr::read_csv(file = subset_file, 
+    #                           col_types = cols(.default = "c"),
+    #                           col_names = FALSE,
+    #                           trim_ws = TRUE,
+    #                           n_max = 1) %>% 
+    #   tibble::rownames_to_column() %>% 
+    #   tidyr::pivot_longer(-rowname) %>% 
+    element_subset = str_split(subset_file, pattern = ",", simplify = T ) %>% 
+      #dplyr::filter(value %in% unique(as.character(dfl$Analyte))) %>% 
       forcats::as_factor() ## Creates factor in the original order
     ##
-    
     dfw = dfl %>% 
       dplyr::filter(as.character(Analyte) %in% as.character(element_subset) ) %>%
       dplyr::mutate(Analyte = factor(Analyte, 
@@ -91,7 +119,8 @@ tidy_xrf <- function(raw_csv_file,
     }else {
       .
     }} %>% 
-    tidyr::pivot_wider(names_from = Analyte, values_from = Value)
+    tidyr::pivot_wider(names_from = Analyte, values_from = Value) 
+    
   
   dfw_e = dfw %>% 
     dplyr::filter(Variable %in% c("Concentration", "Error1s")) %>%
@@ -128,28 +157,86 @@ tidy_xrf <- function(raw_csv_file,
       as.character(drop_na_concentration)
     )
   )
-  
-    ## create a workbook and add a worksheet
-    wb <- createWorkbook()
-    addWorksheet(wb, "Concentrations")
-    addWorksheet(wb, "Concentrations-and-Error")
-    addWorksheet(wb, "Tidy-Long-Format")
-    addWorksheet(wb, "Original-Raw")
-    addWorksheet(wb, "Tidying-Parameters")
+  # Conditional formatting cells
+  myHeader <- createStyle(textDecoration = "bold")
+  ## create a workbook and add a worksheet
+  wb <- createWorkbook()
+  addWorksheet(wb, "Concentrations")
+  addWorksheet(wb, "Concentrations-and-Error")
+  addWorksheet(wb, "Tidy-Long-Format")
+  addWorksheet(wb, "Original-Raw")
+  addWorksheet(wb, "Tidying-Parameters")
     
     # Add data to workbook
-    writeData(wb, "Concentrations", dfw_c)
-    writeData(wb, "Concentrations-and-Error", dfw_e)
-    writeData(wb, "Tidy-Long-Format", dfl %>% dplyr::select(-any_of(names(elements_tbl))))
+  # Add standards
+  row_c_end = nrow(dfw_c)+1
+  
+  std_names = stdref_tbl %>% 
+    dplyr::pull(Standard)
+  
+  guide_wide = elements_tbl %>% 
+    dplyr::select(all_of(c("Symbol", std_names) )) %>%
+    tidyr::pivot_longer(-Symbol) %>% 
+    tidyr::pivot_wider(names_from = Symbol, values_from = value) %>% 
+    janitor::remove_empty("cols")
+  
+  dfw_cs = dfw_c %>% 
+    dplyr::bind_rows(guide_wide)
+  
+  writeData(wb, "Concentrations", 
+            x = dfw_cs,
+            headerStyle = myHeader)
+    #writeData(wb, "Concentrations", dfw_c, headerStyle = myHeader)
+    writeData(wb, "Concentrations-and-Error", dfw_e, headerStyle = myHeader)
+    writeData(wb, "Tidy-Long-Format", 
+              dfl %>% dplyr::select(-any_of(names(elements_tbl))),
+              headerStyle = myHeader,)
     writeData(wb, "Original-Raw", df)
     writeData(wb, "Tidying-Parameters", params.df)
     
-    # Conditional formatting cells
-    #negStyle <- createStyle(fontColour = "#9C0006", bgFill = "#FFC7CE")
-    #posStyle <- createStyle(fontColour = "#006100", bgFill = "#C6EFCE")
+    if (compare_guide != "None"){
+      addWorksheet(wb, "Concentrations-v-Guidelines")
+      addWorksheet(wb, "Guidelines-Used")
+      writeData(wb, "Concentrations-v-Guidelines", 
+                dfws,
+                headerStyle = myHeader)
+      
+      
+      
+      writeData(wb, "Guidelines-Used", 
+                colNames = FALSE,
+                borders = "surrounding",
+                borderColour = "black",
+                x = select_standard %>% 
+                  t() %>% 
+                  data.frame() %>%  
+                  tibble::rownames_to_column())
+      
+      writeData(wb, "Guidelines-Used", 
+                startRow = 7,
+                headerStyle = myHeader,
+                borders = "surrounding",
+                borderColour = "black",
+                x = select_lod)
+      
+      # Conditional formatting cells
+      negStyle <- createStyle(fontColour = "#9C0006", bgFill = "#FFC7CE")
+      posStyle <- createStyle(fontColour = "#006100", bgFill = "#C6EFCE")
+      #rows and cols
+      col_start = which(names(dfws) == "Variable") + 1
+      col_end = ncol(dfws)
+      row_end = nrow(dfws)+1
+
+      conditionalFormatting(wb, "Concentrations-v-Guidelines", 
+                            cols = col_start:col_end, 
+                            rows = 2:row_end, 
+                            rule = ">0", 
+                            style = negStyle)
+      #conditionalFormatting(wb, "Concentrations-v-Guidelines", cols = 1, rows = 1:11, rule = ">=0", style = posStyle)
+    }
+
     
-    #conditionalFormatting(wb, "CompareStandards", cols = 1, rows = 1:11, rule = "<0", style = negStyle)
-    #conditionalFormatting(wb, "CompareStandards", cols = 1, rows = 1:11, rule = ">=0", style = posStyle)
+   
     if(save_excel){
       save_excel_file = file.path(dirname(raw_csv_file),
                                   paste0("Tidy_", 

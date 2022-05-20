@@ -16,20 +16,20 @@ server <- function(input, output, session) {
     )
   })
   
-  uploadsubsetpath <- reactive({
-    input$subset_upload # waits until upload
-    
-    ext <- tools::file_ext(input$subset_upload$name)
-    switch(ext,
-           csv = input$subset_upload$datapath,
-           validate("Invalid file type. Please upload a .csv file")
-    )
-  })
+  # uploadsubsetpath <- reactive({
+  #   input$subset_upload # waits until upload
+  #   
+  #   ext <- tools::file_ext(input$subset_upload$name)
+  #   switch(ext,
+  #          csv = input$subset_upload$datapath,
+  #          validate("Invalid file type. Please upload a .csv file")
+  #   )
+  # })
   # Run Button ----
   dataset <- eventReactive(input$run_tidy,{
    # req(input$run_tidy)
     if(input$subset_element){
-      subset_file = uploadsubsetpath()
+      subset_file = input$subset_list
     }else{
       subset_file = NULL
     }
@@ -41,10 +41,10 @@ server <- function(input, output, session) {
              drop_na_concentration = input$remove_na,
              save_excel = FALSE,
              doreturn = TRUE,
-             compare_guide = input$guide)
+             compare_guide = input$std)
     
   })
-  #output$text <- renderText({ input$std })
+  output$text <- renderText({ input$std })
   
   # Reactive value for Tidy dataset ----
   

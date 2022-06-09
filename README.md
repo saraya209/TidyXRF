@@ -1,4 +1,6 @@
 # TidyXRF
+This app is available online at https://saraya209.shinyapps.io/tidyxrf/
+
 ## About
 This app imports `.csv` files exported from **Olympus Vanta C-Series** Handheld X-Ray Fluorescence Spectrometer and creates tidied-up tables in multiple formats.
 
